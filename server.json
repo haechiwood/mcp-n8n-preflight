@@ -10,21 +10,28 @@
   "version": "0.1.0",
   "packages": [
     {
-      "registryType": "pypi",
-      "identifier": "mcp-n8n-preflight",
-      "version": "0.1.0",
-      "runtimeHint": "uvx",
+      "registryType": "oci",
+      "identifier": "ghcr.io/haechiwood/mcp-n8n-preflight:0.1.0",
       "transport": {
         "type": "stdio"
       },
-      "environmentVariables": [
+      "runtimeArguments": [
         {
-          "name": "N8N_PREFLIGHT_ROOT",
-          "description": "Folder the server may read workflow .json files from. Default: current directory",
-          "isRequired": false,
-          "format": "string",
-          "isSecret": false
-        },
+          "type": "named",
+          "name": "-v",
+          "value": "{workflows_dir}:/work:ro",
+          "description": "Folder with your exported n8n workflow .json files, mounted read-only at /work",
+          "isRequired": true,
+          "variables": {
+            "workflows_dir": {
+              "description": "Absolute path to the folder with your exported workflow files",
+              "isRequired": true,
+              "format": "filepath"
+            }
+          }
+        }
+      ],
+      "environmentVariables": [
         {
           "name": "N8N_PREFLIGHT_ENABLE_WRITE",
           "description": "Set to true to enable write_sanitized_copy (preview first, confirm to write)",
