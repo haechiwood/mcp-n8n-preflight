@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.haechiwood/n8n-preflight",
+  "title": "n8n Preflight",
+  "description": "Lint exported n8n workflow JSON: failure patterns, leaked secrets, Creator Hub readiness",
+  "repository": {
+    "url": "https://github.com/haechiwood/mcp-n8n-preflight",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "mcp-n8n-preflight",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "N8N_PREFLIGHT_ROOT",
+          "description": "Folder the server may read workflow .json files from. Default: current directory",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "N8N_PREFLIGHT_ENABLE_WRITE",
+          "description": "Set to true to enable write_sanitized_copy (preview first, confirm to write)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

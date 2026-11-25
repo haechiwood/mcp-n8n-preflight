@@ -1,0 +1,35 @@
+{
+  "name": "Lead intake (clean)",
+  "nodes": [
+    {"id": "n0", "name": "Overview", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-420, -260],
+     "parameters": {"width": 380, "height": 520, "content": "## Lead intake\n\n### How it works\nThis workflow receives a lead from your website form through a webhook. It cleans the name and email fields, gives the lead a simple score from the company size, and sends it to your CRM API. The caller gets a JSON reply with the score as soon as the CRM accepts the record. If the CRM call fails three times in a row, the error output sends the item to the failure branch and the caller gets a 502 reply, so your form can show a friendly retry message instead of hanging.\n\n### Setup\n1. Create an HTTP Header Auth credential for your CRM and select it in the Send to CRM node.\n2. Set the CRM URL in the Settings node.\n3. Point your form at the production webhook URL and send a test lead.\n\n### Customization\nChange the score rules in the Score lead node to match your sales process."},
+     "notes": ""},
+    {"id": "n1", "name": "Section: intake", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [0, -160],
+     "parameters": {"color": 7, "width": 640, "height": 320, "content": "## Receive and clean\nValidates the form fields before anything is sent out."}},
+    {"id": "1", "name": "New lead", "type": "n8n-nodes-base.webhook", "typeVersion": 2.2, "position": [40, 0],
+     "webhookId": "00000000-0000-4000-8000-000000000002",
+     "parameters": {"httpMethod": "POST", "path": "lead-intake", "responseMode": "responseNode", "options": {}}},
+    {"id": "2", "name": "Settings", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [260, 0],
+     "parameters": {"assignments": {"assignments": [
+        {"id": "s1", "name": "crmUrl", "type": "string", "value": "https://crm.example.com/api/leads"}]},
+        "includeOtherFields": true, "options": {}}},
+    {"id": "3", "name": "Score lead", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 0],
+     "parameters": {"jsCode": "const cfg = $('Settings').first().json;\nreturn $input.all().map(i => ({ json: { ...i.json, crmUrl: cfg.crmUrl, score: (i.json.body?.employees || 0) > 50 ? 2 : 1 } }));"}},
+    {"id": "4", "name": "Send to CRM", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 0],
+     "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000, "onError": "continueErrorOutput",
+     "parameters": {"method": "POST", "url": "={{ $json.crmUrl }}", "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}"}},
+    {"id": "5", "name": "Reply with score", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, -80],
+     "parameters": {"respondWith": "json", "responseBody": "={{ { ok: true, score: $('Score lead').first().json.score } }}", "options": {}}},
+    {"id": "6", "name": "Reply with error", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, 80],
+     "parameters": {"respondWith": "json", "responseBody": "={{ { ok: false } }}", "options": {"responseCode": 502}}}
+  ],
+  "connections": {
+    "New lead": {"main": [[{"node": "Settings", "type": "main", "index": 0}]]},
+    "Settings": {"main": [[{"node": "Score lead", "type": "main", "index": 0}]]},
+    "Score lead": {"main": [[{"node": "Send to CRM", "type": "main", "index": 0}]]},
+    "Send to CRM": {"main": [[{"node": "Reply with score", "type": "main", "index": 0}], [{"node": "Reply with error", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1", "errorWorkflow": "ERROR_WORKFLOW_ID"},
+  "pinData": {}
+}

@@ -1,0 +1,1148 @@
+### I1 tools/list, write tools off: 3 read tools
+$ mcp-inspector --cli --method tools/list -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1666ms result=PASS
+{
+  "tools": [
+    {
+      "name": "lint_workflow",
+      "description": "Check an exported n8n workflow for run-time failure patterns and things to remove before sharing.\n\n    profile: 'run' = reliability only; 'share' = reliability + secrets/personal data (default);\n    'template' = share + n8n Creator Hub template checks (sticky notes, node names).\n    Secret values are masked in the output.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "anyOf": [
+              {
+                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Path"
+          },
+          "workflow_json": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "items": {},
+                    "type": "array"
+                  }
+                ],
+                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workflow Json"
+          },
+          "profile": {
+            "default": "share",
+            "enum": [
+              "run",
+              "share",
+              "template"
+            ],
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "title": "lint_workflowArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "lint_workflowDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "summarize_workflow",
+      "description": "Describe an n8n workflow: triggers, node count, outside systems it calls, AI nodes, credential types.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "anyOf": [
+              {
+                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Path"
+          },
+          "workflow_json": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "items": {},
+                    "type": "array"
+                  }
+                ],
+                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workflow Json"
+          }
+        },
+        "title": "summarize_workflowArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "summarize_workflowDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_rules",
+      "description": "List the checks this server runs, with why each matters and how to fix it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "default": "all",
+            "enum": [
+              "all",
+              "reliability",
+              "sharing",
+              "template"
+            ],
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "title": "list_rulesArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "list_rulesDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+Schema portability: 0 errors, 2 warnings across 2 tools. Re-run with --strict for details.
+
+### I2 lint broken.json profile=run finds the planted failures
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=broken.json profile=run -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1369ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"broken.json\",\n  \"results\": [\n    {\n      \"workflow\": \"Lead intake (broken on purpose)\",\n      \"profile\": \"run\",\n      \"checked_categories\": [\n        \"reliability\"\n      ],\n      \"passed\": false,\n      \"counts\": {\n        \"error\": 3,\n        \"warning\": 4,\n        \"info\": 2\n      },\n      \"findings\": [\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Score lead\",\n          \"message\": \"References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P002\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"New lead\",\n          \"message\": \"Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.\",\n          \"fix\": \"Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'.\"\n        },\n        {\n          \"rule\": \"N8P004\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Clean lead\",\n          \"message\": \"Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.\",\n          \"fix\": \"Switch the field to Expression mode in the editor (the stored value then starts with '=').\"\n        },\n        {\n          \"rule\": \"N8P005\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Send to CRM\",\n          \"message\": \"Retry On Fail is off and On Error is 'Stop Workflow'.\",\n          \"fix\": \"Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles.\"\n        },\n        {\n          \"rule\": \"N8P007\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Old step\",\n          \"message\": \"No connection leads into this node.\",\n          \"fix\": \"Connect it or delete it.\"\n        },\n        {\n          \"rule\": \"N8P008\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Loop Over Items\",\n          \"message\": \"Output 'loop' (the second output) has no connection.\",\n          \"fix\": \"Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items.\"\n        },\n        {\n          \"rule\": \"N8P006\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": null,\n          \"message\": \"settings.errorWorkflow is empty.\",\n          \"fix\": \"Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert.\"\n        },\n        {\n          \"rule\": \"N8P009\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"This node is disabled.\",\n          \"fix\": \"Re-enable it, or delete it if it is no longer needed.\"\n        }\n      ]\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "broken.json",
+    "results": [
+      {
+        "workflow": "Lead intake (broken on purpose)",
+        "profile": "run",
+        "checked_categories": [
+          "reliability"
+        ],
+        "passed": false,
+        "counts": {
+          "error": 3,
+          "warning": 4,
+          "info": 2
+        },
+        "findings": [
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Score lead",
+            "message": "References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P002",
+            "severity": "error",
+            "category": "reliability",
+            "node": "New lead",
+            "message": "Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.",
+            "fix": "Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'."
+          },
+          {
+            "rule": "N8P004",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Clean lead",
+            "message": "Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.",
+            "fix": "Switch the field to Expression mode in the editor (the stored value then starts with '=')."
+          },
+          {
+            "rule": "N8P005",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Send to CRM",
+            "message": "Retry On Fail is off and On Error is 'Stop Workflow'.",
+            "fix": "Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles."
+          },
+          {
+            "rule": "N8P007",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Old step",
+            "message": "No connection leads into this node.",
+            "fix": "Connect it or delete it."
+          },
+          {
+            "rule": "N8P008",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Loop Over Items",
+            "message": "Output 'loop' (the second output) has no connection.",
+            "fix": "Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items."
+          },
+          {
+            "rule": "N8P006",
+            "severity": "info",
+            "category": "reliability",
+            "node": null,
+            "message": "settings.errorWorkflow is empty.",
+            "fix": "Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert."
+          },
+          {
+            "rule": "N8P009",
+            "severity": "info",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "This node is disabled.",
+            "fix": "Re-enable it, or delete it if it is no longer needed."
+          }
+        ]
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I3 lint broken.json profile=share: secret and email found but masked
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=broken.json profile=share -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1156ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"broken.json\",\n  \"results\": [\n    {\n      \"workflow\": \"Lead intake (broken on purpose)\",\n      \"profile\": \"share\",\n      \"checked_categories\": [\n        \"reliability\",\n        \"sharing\"\n      ],\n      \"passed\": false,\n      \"counts\": {\n        \"error\": 5,\n        \"warning\": 8,\n        \"info\": 3\n      },\n      \"findings\": [\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Score lead\",\n          \"message\": \"References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P002\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"New lead\",\n          \"message\": \"Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.\",\n          \"fix\": \"Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'.\"\n        },\n        {\n          \"rule\": \"N8P101\",\n          \"severity\": \"error\",\n          \"category\": \"sharing\",\n          \"node\": \"Send to CRM\",\n          \"message\": \"bearer_literal in 'headerParameters.parameters[0].value': Bear***\",\n          \"fix\": \"Move it into an n8n credential, revoke the exposed value, and re-export.\"\n        },\n        {\n          \"rule\": \"N8P101\",\n          \"severity\": \"error\",\n          \"category\": \"sharing\",\n          \"node\": \"Send to CRM\",\n          \"message\": \"literal value for 'Authorization' in 'headerParameters.parameters[0]': Bear***\",\n          \"fix\": \"Move it into an n8n credential, revoke the exposed value, and re-export.\"\n        },\n        {\n          \"rule\": \"N8P004\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Clean lead\",\n          \"message\": \"Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.\",\n          \"fix\": \"Switch the field to Expression mode in the editor (the stored value then starts with '=').\"\n        },\n        {\n          \"rule\": \"N8P005\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Send to CRM\",\n          \"message\": \"Retry On Fail is off and On Error is 'Stop Workflow'.\",\n          \"fix\": \"Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles.\"\n        },\n        {\n          \"rule\": \"N8P007\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Old step\",\n          \"message\": \"No connection leads into this node.\",\n          \"fix\": \"Connect it or delete it.\"\n        },\n        {\n          \"rule\": \"N8P008\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Loop Over Items\",\n          \"message\": \"Output 'loop' (the second output) has no connection.\",\n          \"fix\": \"Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items.\"\n        },\n        {\n          \"rule\": \"N8P102\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": \"Notify sales\",\n          \"message\": \"credentials block for: slackApi\",\n          \"fix\": \"Remove the 'credentials' blocks before sharing (write_sanitized_copy can do this). The receiver selects their own credentials after import.\"\n        },\n        {\n          \"rule\": \"N8P103\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": null,\n          \"message\": \"pinData for 1 node(s): New lead\",\n          \"fix\": \"Unpin data in the editor, or remove 'pinData' from the JSON.\"\n        },\n        {\n          \"rule\": \"N8P104\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": \"Clean lead\",\n          \"message\": \"email address in 'assignments.assignments[1].value': jane***\",\n          \"fix\": \"Replace with a clear placeholder, and explain in a note how to set it.\"\n        },\n        {\n          \"rule\": \"N8P104\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": \"Notify sales\",\n          \"message\": \"'channelId' has a fixed value: C012***\",\n          \"fix\": \"Replace with a clear placeholder, and explain in a note how to set it.\"\n        },\n        {\n          \"rule\": \"N8P006\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": null,\n          \"message\": \"settings.errorWorkflow is empty.\",\n          \"fix\": \"Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert.\"\n        },\n        {\n          \"rule\": \"N8P009\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"This node is disabled.\",\n          \"fix\": \"Re-enable it, or delete it if it is no longer needed.\"\n        },\n        {\n          \"rule\": \"N8P105\",\n          \"severity\": \"info\",\n          \"category\": \"sharing\",\n          \"node\": null,\n          \"message\": \"meta.instanceId is set.\",\n          \"fix\": \"Remove meta.instanceId before sharing (write_sanitized_copy does this).\"\n        }\n      ]\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "broken.json",
+    "results": [
+      {
+        "workflow": "Lead intake (broken on purpose)",
+        "profile": "share",
+        "checked_categories": [
+          "reliability",
+          "sharing"
+        ],
+        "passed": false,
+        "counts": {
+          "error": 5,
+          "warning": 8,
+          "info": 3
+        },
+        "findings": [
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Score lead",
+            "message": "References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P002",
+            "severity": "error",
+            "category": "reliability",
+            "node": "New lead",
+            "message": "Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.",
+            "fix": "Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'."
+          },
+          {
+            "rule": "N8P101",
+            "severity": "error",
+            "category": "sharing",
+            "node": "Send to CRM",
+            "message": "bearer_literal in 'headerParameters.parameters[0].value': Bear***",
+            "fix": "Move it into an n8n credential, revoke the exposed value, and re-export."
+          },
+          {
+            "rule": "N8P101",
+            "severity": "error",
+            "category": "sharing",
+            "node": "Send to CRM",
+            "message": "literal value for 'Authorization' in 'headerParameters.parameters[0]': Bear***",
+            "fix": "Move it into an n8n credential, revoke the exposed value, and re-export."
+          },
+          {
+            "rule": "N8P004",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Clean lead",
+            "message": "Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.",
+            "fix": "Switch the field to Expression mode in the editor (the stored value then starts with '=')."
+          },
+          {
+            "rule": "N8P005",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Send to CRM",
+            "message": "Retry On Fail is off and On Error is 'Stop Workflow'.",
+            "fix": "Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles."
+          },
+          {
+            "rule": "N8P007",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Old step",
+            "message": "No connection leads into this node.",
+            "fix": "Connect it or delete it."
+          },
+          {
+            "rule": "N8P008",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Loop Over Items",
+            "message": "Output 'loop' (the second output) has no connection.",
+            "fix": "Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items."
+          },
+          {
+            "rule": "N8P102",
+            "severity": "warning",
+            "category": "sharing",
+            "node": "Notify sales",
+            "message": "credentials block for: slackApi",
+            "fix": "Remove the 'credentials' blocks before sharing (write_sanitized_copy can do this). The receiver selects their own credentials after import."
+          },
+          {
+            "rule": "N8P103",
+            "severity": "warning",
+            "category": "sharing",
+            "node": null,
+            "message": "pinData for 1 node(s): New lead",
+            "fix": "Unpin data in the editor, or remove 'pinData' from the JSON."
+          },
+          {
+            "rule": "N8P104",
+            "severity": "warning",
+            "category": "sharing",
+            "node": "Clean lead",
+            "message": "email address in 'assignments.assignments[1].value': jane***",
+            "fix": "Replace with a clear placeholder, and explain in a note how to set it."
+          },
+          {
+            "rule": "N8P104",
+            "severity": "warning",
+            "category": "sharing",
+            "node": "Notify sales",
+            "message": "'channelId' has a fixed value: C012***",
+            "fix": "Replace with a clear placeholder, and explain in a note how to set it."
+          },
+          {
+            "rule": "N8P006",
+            "severity": "info",
+            "category": "reliability",
+            "node": null,
+            "message": "settings.errorWorkflow is empty.",
+            "fix": "Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert."
+          },
+          {
+            "rule": "N8P009",
+            "severity": "info",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "This node is disabled.",
+            "fix": "Re-enable it, or delete it if it is no longer needed."
+          },
+          {
+            "rule": "N8P105",
+            "severity": "info",
+            "category": "sharing",
+            "node": null,
+            "message": "meta.instanceId is set.",
+            "fix": "Remove meta.instanceId before sharing (write_sanitized_copy does this)."
+          }
+        ]
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I4 lint clean.json profile=template: no findings
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json profile=template -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1220ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"clean.json\",\n  \"results\": [\n    {\n      \"workflow\": \"Lead intake (clean)\",\n      \"profile\": \"template\",\n      \"checked_categories\": [\n        \"reliability\",\n        \"sharing\",\n        \"template\"\n      ],\n      \"passed\": true,\n      \"counts\": {\n        \"error\": 0,\n        \"warning\": 0,\n        \"info\": 0\n      },\n      \"findings\": []\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "clean.json",
+    "results": [
+      {
+        "workflow": "Lead intake (clean)",
+        "profile": "template",
+        "checked_categories": [
+          "reliability",
+          "sharing",
+          "template"
+        ],
+        "passed": true,
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0
+        },
+        "findings": []
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I5 lint inline workflow_json
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg 'workflow_json={"name": "Lead intake (clean)", "nodes": [{"id": "n0", "name": "Overview", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-420, -260], "parameters": {"width": 380, "height": 520, "content": "## Lead intake\n\n### How it works\nThis workflow receives a lead from your website form through a webhook. It cleans the name and email fields, gives the lead a simple score from the company size, and sends it to your CRM API. The caller gets a JSON reply with the score as soon as the CRM accepts the record. If the CRM call fails three times in a row, the error output sends the item to the failure branch and the caller gets a 502 reply, so your form can show a friendly retry message instead of hanging.\n\n### Setup\n1. Create an HTTP Header Auth credential for your CRM and select it in the Send to CRM node.\n2. Set the CRM URL in the Settings node.\n3. Point your form at the production webhook URL and send a test lead.\n\n### Customization\nChange the score rules in the Score lead node to match your sales process."}, "notes": ""}, {"id": "n1", "name": "Section: intake", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [0, -160], "parameters": {"color": 7, "width": 640, "height": 320, "content": "## Receive and clean\nValidates the form fields before anything is sent out."}}, {"id": "1", "name": "New lead", "type": "n8n-nodes-base.webhook", "typeVersion": 2.2, "position": [40, 0], "webhookId": "00000000-0000-4000-8000-000000000002", "parameters": {"httpMethod": "POST", "path": "lead-intake", "responseMode": "responseNode", "options": {}}}, {"id": "2", "name": "Settings", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [260, 0], "parameters": {"assignments": {"assignments": [{"id": "s1", "name": "crmUrl", "type": "string", "value": "https://crm.example.com/api/leads"}]}, "includeOtherFields": true, "options": {}}}, {"id": "3", "name": "Score lead", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 0], "parameters": {"jsCode": "const cfg = $('"'"'Settings'"'"').first().json;\nreturn $input.all().map(i => ({ json: { ...i.json, crmUrl: cfg.crmUrl, score: (i.json.body?.employees || 0) > 50 ? 2 : 1 } }));"}}, {"id": "4", "name": "Send to CRM", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 0], "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000, "onError": "continueErrorOutput", "parameters": {"method": "POST", "url": "={{ $json.crmUrl }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}"}}, {"id": "5", "name": "Reply with score", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, -80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: true, score: $('"'"'Score lead'"'"').first().json.score } }}", "options": {}}}, {"id": "6", "name": "Reply with error", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, 80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: false } }}", "options": {"responseCode": 502}}}], "connections": {"New lead": {"main": [[{"node": "Settings", "type": "main", "index": 0}]]}, "Settings": {"main": [[{"node": "Score lead", "type": "main", "index": 0}]]}, "Score lead": {"main": [[{"node": "Send to CRM", "type": "main", "index": 0}]]}, "Send to CRM": {"main": [[{"node": "Reply with score", "type": "main", "index": 0}], [{"node": "Reply with error", "type": "main", "index": 0}]]}}, "settings": {"executionOrder": "v1", "errorWorkflow": "ERROR_WORKFLOW_ID"}, "pinData": {}}' profile=run -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1323ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"inline\",\n  \"results\": [\n    {\n      \"workflow\": \"Lead intake (clean)\",\n      \"profile\": \"run\",\n      \"checked_categories\": [\n        \"reliability\"\n      ],\n      \"passed\": true,\n      \"counts\": {\n        \"error\": 0,\n        \"warning\": 0,\n        \"info\": 0\n      },\n      \"findings\": []\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "inline",
+    "results": [
+      {
+        "workflow": "Lead intake (clean)",
+        "profile": "run",
+        "checked_categories": [
+          "reliability"
+        ],
+        "passed": true,
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0
+        },
+        "findings": []
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I6 path outside N8N_PREFLIGHT_ROOT is refused
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=<OUTSIDE>/secret.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1971ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I7 ../ traversal is refused
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=../x.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1408ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I8 non-.json file is refused
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=notes.txt -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1389ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: Only .json files are read or written."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Only .json files are read or written.'
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I9 both path and workflow_json is refused
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json 'workflow_json={"name": "Lead intake (clean)", "nodes": [{"id": "n0", "name": "Overview", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-420, -260], "parameters": {"width": 380, "height": 520, "content": "## Lead intake\n\n### How it works\nThis workflow receives a lead from your website form through a webhook. It cleans the name and email fields, gives the lead a simple score from the company size, and sends it to your CRM API. The caller gets a JSON reply with the score as soon as the CRM accepts the record. If the CRM call fails three times in a row, the error output sends the item to the failure branch and the caller gets a 502 reply, so your form can show a friendly retry message instead of hanging.\n\n### Setup\n1. Create an HTTP Header Auth credential for your CRM and select it in the Send to CRM node.\n2. Set the CRM URL in the Settings node.\n3. Point your form at the production webhook URL and send a test lead.\n\n### Customization\nChange the score rules in the Score lead node to match your sales process."}, "notes": ""}, {"id": "n1", "name": "Section: intake", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [0, -160], "parameters": {"color": 7, "width": 640, "height": 320, "content": "## Receive and clean\nValidates the form fields before anything is sent out."}}, {"id": "1", "name": "New lead", "type": "n8n-nodes-base.webhook", "typeVersion": 2.2, "position": [40, 0], "webhookId": "00000000-0000-4000-8000-000000000002", "parameters": {"httpMethod": "POST", "path": "lead-intake", "responseMode": "responseNode", "options": {}}}, {"id": "2", "name": "Settings", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [260, 0], "parameters": {"assignments": {"assignments": [{"id": "s1", "name": "crmUrl", "type": "string", "value": "https://crm.example.com/api/leads"}]}, "includeOtherFields": true, "options": {}}}, {"id": "3", "name": "Score lead", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 0], "parameters": {"jsCode": "const cfg = $('"'"'Settings'"'"').first().json;\nreturn $input.all().map(i => ({ json: { ...i.json, crmUrl: cfg.crmUrl, score: (i.json.body?.employees || 0) > 50 ? 2 : 1 } }));"}}, {"id": "4", "name": "Send to CRM", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 0], "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000, "onError": "continueErrorOutput", "parameters": {"method": "POST", "url": "={{ $json.crmUrl }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}"}}, {"id": "5", "name": "Reply with score", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, -80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: true, score: $('"'"'Score lead'"'"').first().json.score } }}", "options": {}}}, {"id": "6", "name": "Reply with error", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, 80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: false } }}", "options": {"responseCode": 502}}}], "connections": {"New lead": {"main": [[{"node": "Settings", "type": "main", "index": 0}]]}, "Settings": {"main": [[{"node": "Score lead", "type": "main", "index": 0}]]}, "Score lead": {"main": [[{"node": "Send to CRM", "type": "main", "index": 0}]]}, "Send to CRM": {"main": [[{"node": "Reply with score", "type": "main", "index": 0}], [{"node": "Reply with error", "type": "main", "index": 0}]]}}, "settings": {"executionOrder": "v1", "errorWorkflow": "ERROR_WORKFLOW_ID"}, "pinData": {}}' -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1298ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: Give exactly one of 'path' or 'workflow_json'."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: "Error executing tool lint_workflow: Give exactly one of 'path' or 'workflow_json'."
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I10 invalid profile is rejected by the input schema
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json profile=strict -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1379ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: 1 validation error for lint_workflowArguments\nprofile\n  Input should be 'run', 'share' or 'template' [type=literal_error, input_value='strict', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error"
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' rejected arguments: ['profile']
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I11 not a workflow (no nodes) is refused
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=not-a-workflow.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 2115ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool lint_workflow: Not an n8n workflow export: expected an object (or a list of objects) with a 'nodes' list."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: "Error executing tool lint_workflow: Not an n8n workflow export: expected an object (or a list of objects) with a 'nodes' list."
+{"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
+
+### I12 summarize broken.json
+$ mcp-inspector --cli --method tools/call --tool-name summarize_workflow --tool-arg path=broken.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1400ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"broken.json\",\n  \"workflows\": [\n    {\n      \"name\": \"Lead intake (broken on purpose)\",\n      \"node_count\": 7,\n      \"sticky_notes\": 0,\n      \"triggers\": [\n        {\n          \"name\": \"New lead\",\n          \"type\": \"n8n-nodes-base.webhook\"\n        }\n      ],\n      \"outside_systems\": [\n        \"n8n-nodes-base.httpRequest\",\n        \"n8n-nodes-base.slack\"\n      ],\n      \"ai_nodes\": [],\n      \"credential_types\": [\n        \"slackApi\"\n      ],\n      \"disabled_nodes\": [\n        \"Notify sales\"\n      ],\n      \"error_workflow_set\": false,\n      \"has_pinned_data\": true,\n      \"connections_from\": 5\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "broken.json",
+    "workflows": [
+      {
+        "name": "Lead intake (broken on purpose)",
+        "node_count": 7,
+        "sticky_notes": 0,
+        "triggers": [
+          {
+            "name": "New lead",
+            "type": "n8n-nodes-base.webhook"
+          }
+        ],
+        "outside_systems": [
+          "n8n-nodes-base.httpRequest",
+          "n8n-nodes-base.slack"
+        ],
+        "ai_nodes": [],
+        "credential_types": [
+          "slackApi"
+        ],
+        "disabled_nodes": [
+          "Notify sales"
+        ],
+        "error_workflow_set": false,
+        "has_pinned_data": true,
+        "connections_from": 5
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I13 list_rules category=template
+$ mcp-inspector --cli --method tools/call --tool-name list_rules --tool-arg category=template -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=0 1260ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"count\": 4,\n  \"rules\": [\n    {\n      \"id\": \"N8P201\",\n      \"category\": \"template\",\n      \"severity\": \"warning\",\n      \"title\": \"No overview sticky note\",\n      \"why\": \"Creator Hub templates need one main overview note with '### How it works' and '### Setup', 100 to 300 words.\",\n      \"fix\": \"Add a yellow sticky note in the top-left with those headings.\"\n    },\n    {\n      \"id\": \"N8P202\",\n      \"category\": \"template\",\n      \"severity\": \"warning\",\n      \"title\": \"No section notes\",\n      \"why\": \"Workflows with four or more nodes need section notes that group related nodes.\",\n      \"fix\": \"Add short notes with a '## Heading' (under 50 words) over each group of nodes.\"\n    },\n    {\n      \"id\": \"N8P203\",\n      \"category\": \"template\",\n      \"severity\": \"info\",\n      \"title\": \"Default node name\",\n      \"why\": \"Names like 'HTTP Request1' or 'Code' do not say what the step does.\",\n      \"fix\": \"Rename the node to describe its purpose, for example 'Find existing contact'.\"\n    },\n    {\n      \"id\": \"N8P204\",\n      \"category\": \"template\",\n      \"severity\": \"warning\",\n      \"title\": \"Overview note length outside 100 to 300 words\",\n      \"why\": \"The Creator Hub sticky note guideline asks for 100 to 300 words.\",\n      \"fix\": \"Shorten or extend the overview note.\"\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "count": 4,
+    "rules": [
+      {
+        "id": "N8P201",
+        "category": "template",
+        "severity": "warning",
+        "title": "No overview sticky note",
+        "why": "Creator Hub templates need one main overview note with '### How it works' and '### Setup', 100 to 300 words.",
+        "fix": "Add a yellow sticky note in the top-left with those headings."
+      },
+      {
+        "id": "N8P202",
+        "category": "template",
+        "severity": "warning",
+        "title": "No section notes",
+        "why": "Workflows with four or more nodes need section notes that group related nodes.",
+        "fix": "Add short notes with a '## Heading' (under 50 words) over each group of nodes."
+      },
+      {
+        "id": "N8P203",
+        "category": "template",
+        "severity": "info",
+        "title": "Default node name",
+        "why": "Names like 'HTTP Request1' or 'Code' do not say what the step does.",
+        "fix": "Rename the node to describe its purpose, for example 'Find existing contact'."
+      },
+      {
+        "id": "N8P204",
+        "category": "template",
+        "severity": "warning",
+        "title": "Overview note length outside 100 to 300 words",
+        "why": "The Creator Hub sticky note guideline asks for 100 to 300 words.",
+        "fix": "Shorten or extend the overview note."
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+
+### I14 write tool is not callable when write tools are off
+$ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
+exit=5 1207ms result=PASS
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+{"error":{"code":"tool_not_found","message":"Tool 'write_sanitized_copy' not found on server."}}
+
+### W1 tools/list with N8N_PREFLIGHT_ENABLE_WRITE=true
+$ mcp-inspector --cli --method tools/list -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=0 1266ms result=PASS
+{
+  "tools": [
+    {
+      "name": "lint_workflow",
+      "description": "Check an exported n8n workflow for run-time failure patterns and things to remove before sharing.\n\n    profile: 'run' = reliability only; 'share' = reliability + secrets/personal data (default);\n    'template' = share + n8n Creator Hub template checks (sticky notes, node names).\n    Secret values are masked in the output.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "anyOf": [
+              {
+                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Path"
+          },
+          "workflow_json": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "items": {},
+                    "type": "array"
+                  }
+                ],
+                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workflow Json"
+          },
+          "profile": {
+            "default": "share",
+            "enum": [
+              "run",
+              "share",
+              "template"
+            ],
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "title": "lint_workflowArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "lint_workflowDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "summarize_workflow",
+      "description": "Describe an n8n workflow: triggers, node count, outside systems it calls, AI nodes, credential types.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "anyOf": [
+              {
+                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Path"
+          },
+          "workflow_json": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "items": {},
+                    "type": "array"
+                  }
+                ],
+                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workflow Json"
+          }
+        },
+        "title": "summarize_workflowArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "summarize_workflowDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_rules",
+      "description": "List the checks this server runs, with why each matters and how to fix it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "default": "all",
+            "enum": [
+              "all",
+              "reliability",
+              "sharing",
+              "template"
+            ],
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "title": "list_rulesArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "list_rulesDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "write_sanitized_copy",
+      "description": "WRITE: save a copy of the workflow for sharing (no pinned data, credentials, instance ID or\n    literal secrets). Without confirm=true it only returns the list of changes.\n\n    Show the preview to the user and call again with confirm=true only after they approve.\n    Never overwrites an existing file.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+            "maxLength": 500,
+            "title": "Path",
+            "type": "string"
+          },
+          "output_path": {
+            "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
+            "maxLength": 500,
+            "title": "Output Path",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "output_path"
+        ],
+        "title": "write_sanitized_copyArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "write_sanitized_copyDictOutput"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+Schema portability: 0 errors, 2 warnings across 2 tools. Re-run with --strict for details.
+
+### W2 write without confirm returns a preview and writes nothing
+$ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=0 1345ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"written\": false,\n  \"preview\": {\n    \"source\": \"broken.json\",\n    \"output\": \"shared.json\",\n    \"changes\": [\n      \"removed pinData\",\n      \"removed meta.instanceId\",\n      \"replaced a bearer_literal in 'Send to CRM' with <REPLACE_ME>\",\n      \"removed credentials from 'Notify sales'\"\n    ]\n  },\n  \"next_step\": \"Show this preview to the user. Call again with confirm=true only if they approve.\"\n}"
+    }
+  ],
+  "structuredContent": {
+    "written": false,
+    "preview": {
+      "source": "broken.json",
+      "output": "shared.json",
+      "changes": [
+        "removed pinData",
+        "removed meta.instanceId",
+        "replaced a bearer_literal in 'Send to CRM' with <REPLACE_ME>",
+        "removed credentials from 'Notify sales'"
+      ]
+    },
+    "next_step": "Show this preview to the user. Call again with confirm=true only if they approve."
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+
+### W3 write with confirm=true writes the copy
+$ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=0 1255ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"written\": true,\n  \"preview\": {\n    \"source\": \"broken.json\",\n    \"output\": \"shared.json\",\n    \"changes\": [\n      \"removed pinData\",\n      \"removed meta.instanceId\",\n      \"replaced a bearer_literal in 'Send to CRM' with <REPLACE_ME>\",\n      \"removed credentials from 'Notify sales'\"\n    ]\n  },\n  \"remaining_findings\": [\n    {\n      \"workflow\": \"Lead intake (broken on purpose)\",\n      \"counts\": {\n        \"error\": 3,\n        \"warning\": 6,\n        \"info\": 2\n      }\n    }\n  ],\n  \"note\": \"Personal data inside text (emails, IDs) is not changed automatically. Run lint_workflow on the copy and replace what is left by hand.\"\n}"
+    }
+  ],
+  "structuredContent": {
+    "written": true,
+    "preview": {
+      "source": "broken.json",
+      "output": "shared.json",
+      "changes": [
+        "removed pinData",
+        "removed meta.instanceId",
+        "replaced a bearer_literal in 'Send to CRM' with <REPLACE_ME>",
+        "removed credentials from 'Notify sales'"
+      ]
+    },
+    "remaining_findings": [
+      {
+        "workflow": "Lead intake (broken on purpose)",
+        "counts": {
+          "error": 3,
+          "warning": 6,
+          "info": 2
+        }
+      }
+    ],
+    "note": "Personal data inside text (emails, IDs) is not changed automatically. Run lint_workflow on the copy and replace what is left by hand."
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight write: sanitized copy written (4 changes)
+
+### W4 write never overwrites an existing file
+$ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=5 1172ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool write_sanitized_copy: output_path already exists. Choose a new file name."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO mcp.server.mcpserver.server Tool 'write_sanitized_copy' failed: 'Error executing tool write_sanitized_copy: output_path already exists. Choose a new file name.'
+{"error":{"code":"tool_is_error","message":"Tool 'write_sanitized_copy' returned isError:true."}}
+
+### W5 write outside the root is refused
+$ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=<OUTSIDE>/x.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=5 1246ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool write_sanitized_copy: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting."
+    }
+  ],
+  "isError": true
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO mcp.server.mcpserver.server Tool 'write_sanitized_copy' failed: 'Error executing tool write_sanitized_copy: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
+{"error":{"code":"tool_is_error","message":"Tool 'write_sanitized_copy' returned isError:true."}}
+
+### W6 the written copy lints without secret/credential/pinData findings
+$ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=shared.json profile=share -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
+exit=0 1259ms result=PASS
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"source\": \"shared.json\",\n  \"results\": [\n    {\n      \"workflow\": \"Lead intake (broken on purpose)\",\n      \"profile\": \"share\",\n      \"checked_categories\": [\n        \"reliability\",\n        \"sharing\"\n      ],\n      \"passed\": false,\n      \"counts\": {\n        \"error\": 3,\n        \"warning\": 6,\n        \"info\": 2\n      },\n      \"findings\": [\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P001\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"Score lead\",\n          \"message\": \"References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.\",\n          \"fix\": \"Use the node's exact current name, or rename the node back.\"\n        },\n        {\n          \"rule\": \"N8P002\",\n          \"severity\": \"error\",\n          \"category\": \"reliability\",\n          \"node\": \"New lead\",\n          \"message\": \"Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.\",\n          \"fix\": \"Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'.\"\n        },\n        {\n          \"rule\": \"N8P004\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Clean lead\",\n          \"message\": \"Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.\",\n          \"fix\": \"Switch the field to Expression mode in the editor (the stored value then starts with '=').\"\n        },\n        {\n          \"rule\": \"N8P005\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Send to CRM\",\n          \"message\": \"Retry On Fail is off and On Error is 'Stop Workflow'.\",\n          \"fix\": \"Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles.\"\n        },\n        {\n          \"rule\": \"N8P007\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Old step\",\n          \"message\": \"No connection leads into this node.\",\n          \"fix\": \"Connect it or delete it.\"\n        },\n        {\n          \"rule\": \"N8P008\",\n          \"severity\": \"warning\",\n          \"category\": \"reliability\",\n          \"node\": \"Loop Over Items\",\n          \"message\": \"Output 'loop' (the second output) has no connection.\",\n          \"fix\": \"Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items.\"\n        },\n        {\n          \"rule\": \"N8P104\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": \"Clean lead\",\n          \"message\": \"email address in 'assignments.assignments[1].value': jane***\",\n          \"fix\": \"Replace with a clear placeholder, and explain in a note how to set it.\"\n        },\n        {\n          \"rule\": \"N8P104\",\n          \"severity\": \"warning\",\n          \"category\": \"sharing\",\n          \"node\": \"Notify sales\",\n          \"message\": \"'channelId' has a fixed value: C012***\",\n          \"fix\": \"Replace with a clear placeholder, and explain in a note how to set it.\"\n        },\n        {\n          \"rule\": \"N8P006\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": null,\n          \"message\": \"settings.errorWorkflow is empty.\",\n          \"fix\": \"Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert.\"\n        },\n        {\n          \"rule\": \"N8P009\",\n          \"severity\": \"info\",\n          \"category\": \"reliability\",\n          \"node\": \"Notify sales\",\n          \"message\": \"This node is disabled.\",\n          \"fix\": \"Re-enable it, or delete it if it is no longer needed.\"\n        }\n      ]\n    }\n  ]\n}"
+    }
+  ],
+  "structuredContent": {
+    "source": "shared.json",
+    "results": [
+      {
+        "workflow": "Lead intake (broken on purpose)",
+        "profile": "share",
+        "checked_categories": [
+          "reliability",
+          "sharing"
+        ],
+        "passed": false,
+        "counts": {
+          "error": 3,
+          "warning": 6,
+          "info": 2
+        },
+        "findings": [
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "References node 'Score Lead', which is not in this workflow. Did you mean 'Score lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P001",
+            "severity": "error",
+            "category": "reliability",
+            "node": "Score lead",
+            "message": "References node 'clean lead', which is not in this workflow. Did you mean 'Clean lead'? Names are case-sensitive.",
+            "fix": "Use the node's exact current name, or rename the node back."
+          },
+          {
+            "rule": "N8P002",
+            "severity": "error",
+            "category": "reliability",
+            "node": "New lead",
+            "message": "Respond is set to 'Using Respond to Webhook Node', but the workflow has no enabled Respond to Webhook node.",
+            "fix": "Add a Respond to Webhook node on every path, or set Respond to 'Immediately' or 'When Last Node Finishes'."
+          },
+          {
+            "rule": "N8P004",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Clean lead",
+            "message": "Parameter 'assignments.assignments[0].value' contains '{{ $... }}' but is stored as fixed text.",
+            "fix": "Switch the field to Expression mode in the editor (the stored value then starts with '=')."
+          },
+          {
+            "rule": "N8P005",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Send to CRM",
+            "message": "Retry On Fail is off and On Error is 'Stop Workflow'.",
+            "fix": "Turn on Settings > Retry On Fail (for example 3 tries, 2000 ms), and choose an On Error behaviour that your workflow handles."
+          },
+          {
+            "rule": "N8P007",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Old step",
+            "message": "No connection leads into this node.",
+            "fix": "Connect it or delete it."
+          },
+          {
+            "rule": "N8P008",
+            "severity": "warning",
+            "category": "reliability",
+            "node": "Loop Over Items",
+            "message": "Output 'loop' (the second output) has no connection.",
+            "fix": "Connect the 'loop' output to the steps that process a batch, and connect the last of those steps back to Loop Over Items."
+          },
+          {
+            "rule": "N8P104",
+            "severity": "warning",
+            "category": "sharing",
+            "node": "Clean lead",
+            "message": "email address in 'assignments.assignments[1].value': jane***",
+            "fix": "Replace with a clear placeholder, and explain in a note how to set it."
+          },
+          {
+            "rule": "N8P104",
+            "severity": "warning",
+            "category": "sharing",
+            "node": "Notify sales",
+            "message": "'channelId' has a fixed value: C012***",
+            "fix": "Replace with a clear placeholder, and explain in a note how to set it."
+          },
+          {
+            "rule": "N8P006",
+            "severity": "info",
+            "category": "reliability",
+            "node": null,
+            "message": "settings.errorWorkflow is empty.",
+            "fix": "Workflow Settings > Error Workflow: pick a workflow that starts with an Error Trigger and sends you an alert."
+          },
+          {
+            "rule": "N8P009",
+            "severity": "info",
+            "category": "reliability",
+            "node": "Notify sales",
+            "message": "This node is disabled.",
+            "fix": "Re-enable it, or delete it if it is no longer needed."
+          }
+        ]
+      }
+    ]
+  },
+  "isError": false
+}
+
+INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON

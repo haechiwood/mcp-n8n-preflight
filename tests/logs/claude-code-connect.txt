@@ -1,0 +1,7 @@
+# Claude Code connection check (2026-11-25)
+Isolated CLAUDE_CONFIG_DIR (temp dir, deleted afterwards). No model call was made: `claude mcp list` only starts each server and does the MCP handshake.
+
+Checking MCP server health…
+
+n8n-preflight: <SCRATCH>/venv-preflight/bin/mcp-n8n-preflight  - ✔ Connected
+n8n-preflight-uvx: uvx --from <PKG> mcp-n8n-preflight - ✔ Connected
