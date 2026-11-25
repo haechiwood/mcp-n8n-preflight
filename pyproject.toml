@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-n8n-preflight"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server that checks exported n8n workflow JSON for failure patterns, leaked secrets and template readiness"
 readme = "README.md"
 requires-python = ">=3.10"

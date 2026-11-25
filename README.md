@@ -61,7 +61,7 @@ Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/) (or pip).
 
 ```bash
 uvx mcp-n8n-preflight                                                             # from PyPI
-docker run -i --rm -v "$PWD:/work:ro" ghcr.io/haechiwood/mcp-n8n-preflight:0.1.1   # Docker, reads /work
+docker run -i --rm -v "$PWD:/work:ro" ghcr.io/haechiwood/mcp-n8n-preflight:0.1.2   # Docker, reads /work
 ```
 
 Or `pip install mcp-n8n-preflight`.
@@ -141,10 +141,10 @@ pytest -q                                   # 9 unit tests (rules, masking, sani
 python tests/run_inspector.py               # 20 end-to-end cases through the official MCP Inspector CLI
 ```
 
-Latest run (2026-11-25, Python 3.11, `mcp` 2.3.0, MCP Inspector CLI 2.16.0): **9/9 pytest, 20/20 Inspector cases**
+Latest run (2026-11-26, version 0.1.2, Python 3.12.11, `mcp` 2.3.0, MCP Inspector CLI 2.16.0): **9/9 pytest, 20/20 Inspector cases**
 (tool list with and without the write tool, planted failures found, secrets masked, path traversal refused,
 preview-then-confirm, no overwrite). Logs: [`tests/logs/summary.md.txt`](tests/logs/summary.md.txt),
-[`tests/logs/inspector-stdio.txt`](tests/logs/inspector-stdio.txt). Claude Code 2.1.332 connected over stdio
+[`tests/logs/inspector-stdio.txt`](tests/logs/inspector-stdio.txt). Claude Code 2.1.332 connected over stdio to 0.1.1
 (local path and `uvx --from`), see [`tests/logs/claude-code-connect.txt`](tests/logs/claude-code-connect.txt).
 Not tested: Claude Desktop, Windows.
 

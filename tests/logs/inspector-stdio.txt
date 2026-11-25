@@ -1,18 +1,18 @@
 ### I1 tools/list, write tools off: 3 read tools
 $ mcp-inspector --cli --method tools/list -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1666ms result=PASS
+exit=0 1627ms result=PASS
 {
   "tools": [
     {
       "name": "lint_workflow",
-      "description": "Check an exported n8n workflow for run-time failure patterns and things to remove before sharing.\n\n    profile: 'run' = reliability only; 'share' = reliability + secrets/personal data (default);\n    'template' = share + n8n Creator Hub template checks (sticky notes, node names).\n    Secret values are masked in the output.\n    ",
+      "title": "Lint n8n workflow",
+      "description": "Check an exported n8n workflow JSON for run-time failure patterns and for data to remove before sharing.\n\n    Use it when a workflow fails or behaves oddly, before posting a workflow in a forum or sending it to\n    someone ('share'), or before submitting it to the n8n Creator Hub ('template'). Use summarize_workflow\n    instead for a plain overview, and list_rules to see what each rule ID means.\n\n    Arguments: give exactly one of path (a .json file under N8N_PREFLIGHT_ROOT, e.g. 'invoice-sync.json')\n    or workflow_json (the JSON text or object). profile picks the checks: 'run', 'share' (default) or\n    'template'. Example: {\"path\": \"lead-intake.json\", \"profile\": \"share\"}.\n\n    Returns {\"source\": file name or \"inline\", \"results\": [one per workflow]}. Each result has workflow\n    (name), profile, checked_categories, passed (true when there are no error-severity findings), counts\n    ({error, warning, info}) and findings sorted by severity. Each finding has rule (e.g. \"N8P001\"),\n    severity (error | warning | info), category, node (node name or null), message and fix. Secret values\n    and emails are masked to their first 4 characters.\n\n    Static analysis only: it does not run the workflow, does not run Code node JavaScript, does not\n    connect to n8n and makes no network requests. It never changes the file. A clean result does not prove\n    the workflow works. Errors: a path outside the folder, a non-.json file, a file over 5 MB, invalid\n    JSON, or JSON without a 'nodes' list are refused with a message saying what to fix.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "path": {
             "anyOf": [
               {
-                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
                 "maxLength": 500,
                 "type": "string"
               },
@@ -21,35 +21,33 @@ exit=0 1666ms result=PASS
               }
             ],
             "default": null,
+            "description": "Path to one exported n8n workflow .json file, relative to N8N_PREFLIGHT_ROOT or absolute inside it. Example: 'invoice-sync.json' or 'exports/lead-intake.json'. Paths outside the folder and non-.json files are refused. Give either path or workflow_json, not both.",
             "title": "Path"
           },
           "workflow_json": {
             "anyOf": [
               {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "items": {},
-                    "type": "array"
-                  }
-                ],
-                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
+            "description": "The exported workflow itself, as JSON text or an object, instead of path. Accepts one workflow object (editor Download / copy) or a list of them (`n8n export:workflow --all`, max 50). Example: {\"name\": \"My flow\", \"nodes\": [...], \"connections\": {...}}. Max 5 MB.",
             "title": "Workflow Json"
           },
           "profile": {
             "default": "share",
+            "description": "Which checks to run. 'run' = reliability only (will it fail at run time). 'share' = reliability + sharing (secrets, credential names/IDs, pinned data, emails, fixed IDs, instance ID); the default, use it before posting or sending a workflow. 'template' = share + n8n Creator Hub template checks (sticky notes, default node names); use it before submitting a template.",
             "enum": [
               "run",
               "share",
@@ -68,19 +66,21 @@ exit=0 1666ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
     {
       "name": "summarize_workflow",
-      "description": "Describe an n8n workflow: triggers, node count, outside systems it calls, AI nodes, credential types.",
+      "title": "Summarize n8n workflow",
+      "description": "Give a structural overview of an exported n8n workflow JSON: what starts it, what it connects to,\n    and what it needs.\n\n    Use it to understand an unfamiliar workflow before editing, importing or reviewing it, or to list the\n    credentials someone must set up. It does not judge the workflow; use lint_workflow to find problems.\n\n    Arguments: give exactly one of path (a .json file under N8N_PREFLIGHT_ROOT, e.g. 'invoice-sync.json')\n    or workflow_json (the JSON text or object). Example: {\"path\": \"invoice-sync.json\"}.\n\n    Returns {\"source\": file name or \"inline\", \"workflows\": [one per workflow]}. Each entry has name,\n    node_count (sticky notes excluded), sticky_notes, triggers ([{name, type}]), outside_systems (node\n    types that are not triggers or built-in logic nodes, e.g. \"n8n-nodes-base.slack\"), ai_nodes (names of\n    LangChain/AI nodes), credential_types (types only, never names, IDs or values), disabled_nodes,\n    error_workflow_set, has_pinned_data and connections_from (number of nodes with outgoing connections).\n\n    Static analysis only: it reads the JSON and does not run the workflow, contact n8n or any outside\n    system, or make network requests. It never changes the file. Invalid input is refused the same way as\n    in lint_workflow.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "path": {
             "anyOf": [
               {
-                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
                 "maxLength": 500,
                 "type": "string"
               },
@@ -89,31 +89,28 @@ exit=0 1666ms result=PASS
               }
             ],
             "default": null,
+            "description": "Path to one exported n8n workflow .json file, relative to N8N_PREFLIGHT_ROOT or absolute inside it. Example: 'invoice-sync.json' or 'exports/lead-intake.json'. Paths outside the folder and non-.json files are refused. Give either path or workflow_json, not both.",
             "title": "Path"
           },
           "workflow_json": {
             "anyOf": [
               {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "items": {},
-                    "type": "array"
-                  }
-                ],
-                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
+            "description": "The exported workflow itself, as JSON text or an object, instead of path. Accepts one workflow object (editor Download / copy) or a list of them (`n8n export:workflow --all`, max 50). Example: {\"name\": \"My flow\", \"nodes\": [...], \"connections\": {...}}. Max 5 MB.",
             "title": "Workflow Json"
           }
         },
@@ -126,17 +123,21 @@ exit=0 1666ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
     {
       "name": "list_rules",
-      "description": "List the checks this server runs, with why each matters and how to fix it.",
+      "title": "List preflight rules",
+      "description": "List the static checks this server runs, with why each matters and how to fix it.\n\n    Use it to explain a rule ID from lint_workflow findings (e.g. N8P005), or to show a user what will be\n    checked before they lint. Takes no file and reads nothing from disk.\n\n    Arguments: category, one of 'all' (default), 'reliability', 'sharing' or 'template'.\n    Example: {\"category\": \"sharing\"}.\n\n    Returns {\"count\": number of rules, \"rules\": [...]}. Each rule has id (e.g. \"N8P101\"), category,\n    severity (error | warning | info), title, why and fix. Which categories each lint_workflow profile runs:\n    run = reliability; share = reliability + sharing; template = all three.\n\n    Read-only and offline: no network requests, no workflow execution, no side effects.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "category": {
             "default": "all",
+            "description": "Filter by rule category. 'all' (default) returns all 18 rules; 'reliability' = run-time failure patterns (N8P001-N8P009); 'sharing' = what to remove before sharing (N8P101-N8P105); 'template' = Creator Hub checks (N8P201-N8P204).",
             "enum": [
               "all",
               "reliability",
@@ -156,18 +157,20 @@ exit=0 1666ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     }
   ]
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 Schema portability: 0 errors, 2 warnings across 2 tools. Re-run with --strict for details.
 
 ### I2 lint broken.json profile=run finds the planted failures
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=broken.json profile=run -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1369ms result=PASS
+exit=0 1095ms result=PASS
 {
   "content": [
     {
@@ -270,11 +273,11 @@ exit=0 1369ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I3 lint broken.json profile=share: secret and email found but masked
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=broken.json profile=share -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1156ms result=PASS
+exit=0 1147ms result=PASS
 {
   "content": [
     {
@@ -434,11 +437,11 @@ exit=0 1156ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I4 lint clean.json profile=template: no findings
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json profile=template -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1220ms result=PASS
+exit=0 1066ms result=PASS
 {
   "content": [
     {
@@ -470,11 +473,11 @@ exit=0 1220ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I5 lint inline workflow_json
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg 'workflow_json={"name": "Lead intake (clean)", "nodes": [{"id": "n0", "name": "Overview", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-420, -260], "parameters": {"width": 380, "height": 520, "content": "## Lead intake\n\n### How it works\nThis workflow receives a lead from your website form through a webhook. It cleans the name and email fields, gives the lead a simple score from the company size, and sends it to your CRM API. The caller gets a JSON reply with the score as soon as the CRM accepts the record. If the CRM call fails three times in a row, the error output sends the item to the failure branch and the caller gets a 502 reply, so your form can show a friendly retry message instead of hanging.\n\n### Setup\n1. Create an HTTP Header Auth credential for your CRM and select it in the Send to CRM node.\n2. Set the CRM URL in the Settings node.\n3. Point your form at the production webhook URL and send a test lead.\n\n### Customization\nChange the score rules in the Score lead node to match your sales process."}, "notes": ""}, {"id": "n1", "name": "Section: intake", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [0, -160], "parameters": {"color": 7, "width": 640, "height": 320, "content": "## Receive and clean\nValidates the form fields before anything is sent out."}}, {"id": "1", "name": "New lead", "type": "n8n-nodes-base.webhook", "typeVersion": 2.2, "position": [40, 0], "webhookId": "00000000-0000-4000-8000-000000000002", "parameters": {"httpMethod": "POST", "path": "lead-intake", "responseMode": "responseNode", "options": {}}}, {"id": "2", "name": "Settings", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [260, 0], "parameters": {"assignments": {"assignments": [{"id": "s1", "name": "crmUrl", "type": "string", "value": "https://crm.example.com/api/leads"}]}, "includeOtherFields": true, "options": {}}}, {"id": "3", "name": "Score lead", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 0], "parameters": {"jsCode": "const cfg = $('"'"'Settings'"'"').first().json;\nreturn $input.all().map(i => ({ json: { ...i.json, crmUrl: cfg.crmUrl, score: (i.json.body?.employees || 0) > 50 ? 2 : 1 } }));"}}, {"id": "4", "name": "Send to CRM", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 0], "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000, "onError": "continueErrorOutput", "parameters": {"method": "POST", "url": "={{ $json.crmUrl }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}"}}, {"id": "5", "name": "Reply with score", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, -80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: true, score: $('"'"'Score lead'"'"').first().json.score } }}", "options": {}}}, {"id": "6", "name": "Reply with error", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, 80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: false } }}", "options": {"responseCode": 502}}}], "connections": {"New lead": {"main": [[{"node": "Settings", "type": "main", "index": 0}]]}, "Settings": {"main": [[{"node": "Score lead", "type": "main", "index": 0}]]}, "Score lead": {"main": [[{"node": "Send to CRM", "type": "main", "index": 0}]]}, "Send to CRM": {"main": [[{"node": "Reply with score", "type": "main", "index": 0}], [{"node": "Reply with error", "type": "main", "index": 0}]]}}, "settings": {"executionOrder": "v1", "errorWorkflow": "ERROR_WORKFLOW_ID"}, "pinData": {}}' profile=run -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1323ms result=PASS
+exit=0 1128ms result=PASS
 {
   "content": [
     {
@@ -504,11 +507,11 @@ exit=0 1323ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I6 path outside N8N_PREFLIGHT_ROOT is refused
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=<OUTSIDE>/secret.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1971ms result=PASS
+exit=5 1065ms result=PASS
 {
   "content": [
     {
@@ -519,13 +522,13 @@ exit=5 1971ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I7 ../ traversal is refused
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=../x.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1408ms result=PASS
+exit=5 1121ms result=PASS
 {
   "content": [
     {
@@ -536,13 +539,13 @@ exit=5 1408ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I8 non-.json file is refused
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=notes.txt -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1389ms result=PASS
+exit=5 1152ms result=PASS
 {
   "content": [
     {
@@ -553,13 +556,13 @@ exit=5 1389ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: 'Error executing tool lint_workflow: Only .json files are read or written.'
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I9 both path and workflow_json is refused
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json 'workflow_json={"name": "Lead intake (clean)", "nodes": [{"id": "n0", "name": "Overview", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-420, -260], "parameters": {"width": 380, "height": 520, "content": "## Lead intake\n\n### How it works\nThis workflow receives a lead from your website form through a webhook. It cleans the name and email fields, gives the lead a simple score from the company size, and sends it to your CRM API. The caller gets a JSON reply with the score as soon as the CRM accepts the record. If the CRM call fails three times in a row, the error output sends the item to the failure branch and the caller gets a 502 reply, so your form can show a friendly retry message instead of hanging.\n\n### Setup\n1. Create an HTTP Header Auth credential for your CRM and select it in the Send to CRM node.\n2. Set the CRM URL in the Settings node.\n3. Point your form at the production webhook URL and send a test lead.\n\n### Customization\nChange the score rules in the Score lead node to match your sales process."}, "notes": ""}, {"id": "n1", "name": "Section: intake", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [0, -160], "parameters": {"color": 7, "width": 640, "height": 320, "content": "## Receive and clean\nValidates the form fields before anything is sent out."}}, {"id": "1", "name": "New lead", "type": "n8n-nodes-base.webhook", "typeVersion": 2.2, "position": [40, 0], "webhookId": "00000000-0000-4000-8000-000000000002", "parameters": {"httpMethod": "POST", "path": "lead-intake", "responseMode": "responseNode", "options": {}}}, {"id": "2", "name": "Settings", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [260, 0], "parameters": {"assignments": {"assignments": [{"id": "s1", "name": "crmUrl", "type": "string", "value": "https://crm.example.com/api/leads"}]}, "includeOtherFields": true, "options": {}}}, {"id": "3", "name": "Score lead", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 0], "parameters": {"jsCode": "const cfg = $('"'"'Settings'"'"').first().json;\nreturn $input.all().map(i => ({ json: { ...i.json, crmUrl: cfg.crmUrl, score: (i.json.body?.employees || 0) > 50 ? 2 : 1 } }));"}}, {"id": "4", "name": "Send to CRM", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [700, 0], "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 2000, "onError": "continueErrorOutput", "parameters": {"method": "POST", "url": "={{ $json.crmUrl }}", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}"}}, {"id": "5", "name": "Reply with score", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, -80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: true, score: $('"'"'Score lead'"'"').first().json.score } }}", "options": {}}}, {"id": "6", "name": "Reply with error", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.5, "position": [920, 80], "parameters": {"respondWith": "json", "responseBody": "={{ { ok: false } }}", "options": {"responseCode": 502}}}], "connections": {"New lead": {"main": [[{"node": "Settings", "type": "main", "index": 0}]]}, "Settings": {"main": [[{"node": "Score lead", "type": "main", "index": 0}]]}, "Score lead": {"main": [[{"node": "Send to CRM", "type": "main", "index": 0}]]}, "Send to CRM": {"main": [[{"node": "Reply with score", "type": "main", "index": 0}], [{"node": "Reply with error", "type": "main", "index": 0}]]}}, "settings": {"executionOrder": "v1", "errorWorkflow": "ERROR_WORKFLOW_ID"}, "pinData": {}}' -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1298ms result=PASS
+exit=5 1162ms result=PASS
 {
   "content": [
     {
@@ -570,13 +573,13 @@ exit=5 1298ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: "Error executing tool lint_workflow: Give exactly one of 'path' or 'workflow_json'."
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I10 invalid profile is rejected by the input schema
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=clean.json profile=strict -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1379ms result=PASS
+exit=5 1101ms result=PASS
 {
   "content": [
     {
@@ -587,13 +590,13 @@ exit=5 1379ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' rejected arguments: ['profile']
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I11 not a workflow (no nodes) is refused
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=not-a-workflow.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 2115ms result=PASS
+exit=5 1051ms result=PASS
 {
   "content": [
     {
@@ -604,13 +607,13 @@ exit=5 2115ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 INFO mcp.server.mcpserver.server Tool 'lint_workflow' failed: "Error executing tool lint_workflow: Not an n8n workflow export: expected an object (or a list of objects) with a 'nodes' list."
 {"error":{"code":"tool_is_error","message":"Tool 'lint_workflow' returned isError:true."}}
 
 ### I12 summarize broken.json
 $ mcp-inspector --cli --method tools/call --tool-name summarize_workflow --tool-arg path=broken.json -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1400ms result=PASS
+exit=0 1086ms result=PASS
 {
   "content": [
     {
@@ -651,11 +654,11 @@ exit=0 1400ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I13 list_rules category=template
 $ mcp-inspector --cli --method tools/call --tool-name list_rules --tool-arg category=template -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=0 1260ms result=PASS
+exit=0 1282ms result=PASS
 {
   "content": [
     {
@@ -703,29 +706,29 @@ exit=0 1260ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 
 ### I14 write tool is not callable when write tools are off
 $ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -- python -m n8n_preflight.server
-exit=5 1207ms result=PASS
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools off
+exit=5 1105ms result=PASS
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools off
 {"error":{"code":"tool_not_found","message":"Tool 'write_sanitized_copy' not found on server."}}
 
 ### W1 tools/list with N8N_PREFLIGHT_ENABLE_WRITE=true
 $ mcp-inspector --cli --method tools/list -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=0 1266ms result=PASS
+exit=0 1051ms result=PASS
 {
   "tools": [
     {
       "name": "lint_workflow",
-      "description": "Check an exported n8n workflow for run-time failure patterns and things to remove before sharing.\n\n    profile: 'run' = reliability only; 'share' = reliability + secrets/personal data (default);\n    'template' = share + n8n Creator Hub template checks (sticky notes, node names).\n    Secret values are masked in the output.\n    ",
+      "title": "Lint n8n workflow",
+      "description": "Check an exported n8n workflow JSON for run-time failure patterns and for data to remove before sharing.\n\n    Use it when a workflow fails or behaves oddly, before posting a workflow in a forum or sending it to\n    someone ('share'), or before submitting it to the n8n Creator Hub ('template'). Use summarize_workflow\n    instead for a plain overview, and list_rules to see what each rule ID means.\n\n    Arguments: give exactly one of path (a .json file under N8N_PREFLIGHT_ROOT, e.g. 'invoice-sync.json')\n    or workflow_json (the JSON text or object). profile picks the checks: 'run', 'share' (default) or\n    'template'. Example: {\"path\": \"lead-intake.json\", \"profile\": \"share\"}.\n\n    Returns {\"source\": file name or \"inline\", \"results\": [one per workflow]}. Each result has workflow\n    (name), profile, checked_categories, passed (true when there are no error-severity findings), counts\n    ({error, warning, info}) and findings sorted by severity. Each finding has rule (e.g. \"N8P001\"),\n    severity (error | warning | info), category, node (node name or null), message and fix. Secret values\n    and emails are masked to their first 4 characters.\n\n    Static analysis only: it does not run the workflow, does not run Code node JavaScript, does not\n    connect to n8n and makes no network requests. It never changes the file. A clean result does not prove\n    the workflow works. Errors: a path outside the folder, a non-.json file, a file over 5 MB, invalid\n    JSON, or JSON without a 'nodes' list are refused with a message saying what to fix.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "path": {
             "anyOf": [
               {
-                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
                 "maxLength": 500,
                 "type": "string"
               },
@@ -734,35 +737,33 @@ exit=0 1266ms result=PASS
               }
             ],
             "default": null,
+            "description": "Path to one exported n8n workflow .json file, relative to N8N_PREFLIGHT_ROOT or absolute inside it. Example: 'invoice-sync.json' or 'exports/lead-intake.json'. Paths outside the folder and non-.json files are refused. Give either path or workflow_json, not both.",
             "title": "Path"
           },
           "workflow_json": {
             "anyOf": [
               {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "items": {},
-                    "type": "array"
-                  }
-                ],
-                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
+            "description": "The exported workflow itself, as JSON text or an object, instead of path. Accepts one workflow object (editor Download / copy) or a list of them (`n8n export:workflow --all`, max 50). Example: {\"name\": \"My flow\", \"nodes\": [...], \"connections\": {...}}. Max 5 MB.",
             "title": "Workflow Json"
           },
           "profile": {
             "default": "share",
+            "description": "Which checks to run. 'run' = reliability only (will it fail at run time). 'share' = reliability + sharing (secrets, credential names/IDs, pinned data, emails, fixed IDs, instance ID); the default, use it before posting or sending a workflow. 'template' = share + n8n Creator Hub template checks (sticky notes, default node names); use it before submitting a template.",
             "enum": [
               "run",
               "share",
@@ -781,19 +782,21 @@ exit=0 1266ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
     {
       "name": "summarize_workflow",
-      "description": "Describe an n8n workflow: triggers, node count, outside systems it calls, AI nodes, credential types.",
+      "title": "Summarize n8n workflow",
+      "description": "Give a structural overview of an exported n8n workflow JSON: what starts it, what it connects to,\n    and what it needs.\n\n    Use it to understand an unfamiliar workflow before editing, importing or reviewing it, or to list the\n    credentials someone must set up. It does not judge the workflow; use lint_workflow to find problems.\n\n    Arguments: give exactly one of path (a .json file under N8N_PREFLIGHT_ROOT, e.g. 'invoice-sync.json')\n    or workflow_json (the JSON text or object). Example: {\"path\": \"invoice-sync.json\"}.\n\n    Returns {\"source\": file name or \"inline\", \"workflows\": [one per workflow]}. Each entry has name,\n    node_count (sticky notes excluded), sticky_notes, triggers ([{name, type}]), outside_systems (node\n    types that are not triggers or built-in logic nodes, e.g. \"n8n-nodes-base.slack\"), ai_nodes (names of\n    LangChain/AI nodes), credential_types (types only, never names, IDs or values), disabled_nodes,\n    error_workflow_set, has_pinned_data and connections_from (number of nodes with outgoing connections).\n\n    Static analysis only: it reads the JSON and does not run the workflow, contact n8n or any outside\n    system, or make network requests. It never changes the file. Invalid input is refused the same way as\n    in lint_workflow.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "path": {
             "anyOf": [
               {
-                "description": "Path to an exported workflow .json, relative to N8N_PREFLIGHT_ROOT or absolute inside it",
                 "maxLength": 500,
                 "type": "string"
               },
@@ -802,31 +805,28 @@ exit=0 1266ms result=PASS
               }
             ],
             "default": null,
+            "description": "Path to one exported n8n workflow .json file, relative to N8N_PREFLIGHT_ROOT or absolute inside it. Example: 'invoice-sync.json' or 'exports/lead-intake.json'. Paths outside the folder and non-.json files are refused. Give either path or workflow_json, not both.",
             "title": "Path"
           },
           "workflow_json": {
             "anyOf": [
               {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "items": {},
-                    "type": "array"
-                  }
-                ],
-                "description": "The workflow JSON, as text or as an object (alternative to path). Max 5 MB"
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
+            "description": "The exported workflow itself, as JSON text or an object, instead of path. Accepts one workflow object (editor Download / copy) or a list of them (`n8n export:workflow --all`, max 50). Example: {\"name\": \"My flow\", \"nodes\": [...], \"connections\": {...}}. Max 5 MB.",
             "title": "Workflow Json"
           }
         },
@@ -839,17 +839,21 @@ exit=0 1266ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
     {
       "name": "list_rules",
-      "description": "List the checks this server runs, with why each matters and how to fix it.",
+      "title": "List preflight rules",
+      "description": "List the static checks this server runs, with why each matters and how to fix it.\n\n    Use it to explain a rule ID from lint_workflow findings (e.g. N8P005), or to show a user what will be\n    checked before they lint. Takes no file and reads nothing from disk.\n\n    Arguments: category, one of 'all' (default), 'reliability', 'sharing' or 'template'.\n    Example: {\"category\": \"sharing\"}.\n\n    Returns {\"count\": number of rules, \"rules\": [...]}. Each rule has id (e.g. \"N8P101\"), category,\n    severity (error | warning | info), title, why and fix. Which categories each lint_workflow profile runs:\n    run = reliability; share = reliability + sharing; template = all three.\n\n    Read-only and offline: no network requests, no workflow execution, no side effects.\n    ",
       "inputSchema": {
         "type": "object",
         "properties": {
           "category": {
             "default": "all",
+            "description": "Filter by rule category. 'all' (default) returns all 18 rules; 'reliability' = run-time failure patterns (N8P001-N8P009); 'sharing' = what to remove before sharing (N8P101-N8P105); 'template' = Creator Hub checks (N8P201-N8P204).",
             "enum": [
               "all",
               "reliability",
@@ -869,6 +873,8 @@ exit=0 1266ms result=PASS
       },
       "annotations": {
         "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
@@ -917,12 +923,12 @@ exit=0 1266ms result=PASS
   ]
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON
 Schema portability: 0 errors, 2 warnings across 2 tools. Re-run with --strict for details.
 
 ### W2 write without confirm returns a preview and writes nothing
 $ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=0 1345ms result=PASS
+exit=0 1029ms result=PASS
 {
   "content": [
     {
@@ -947,11 +953,11 @@ exit=0 1345ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON
 
 ### W3 write with confirm=true writes the copy
 $ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=0 1255ms result=PASS
+exit=0 1026ms result=PASS
 {
   "content": [
     {
@@ -986,12 +992,12 @@ exit=0 1255ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON
 INFO n8n-preflight write: sanitized copy written (4 changes)
 
 ### W4 write never overwrites an existing file
 $ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=shared.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=5 1172ms result=PASS
+exit=5 1056ms result=PASS
 {
   "content": [
     {
@@ -1002,13 +1008,13 @@ exit=5 1172ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON
 INFO mcp.server.mcpserver.server Tool 'write_sanitized_copy' failed: 'Error executing tool write_sanitized_copy: output_path already exists. Choose a new file name.'
 {"error":{"code":"tool_is_error","message":"Tool 'write_sanitized_copy' returned isError:true."}}
 
 ### W5 write outside the root is refused
 $ mcp-inspector --cli --method tools/call --tool-name write_sanitized_copy --tool-arg path=broken.json output_path=<OUTSIDE>/x.json confirm=true -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=5 1246ms result=PASS
+exit=5 1084ms result=PASS
 {
   "content": [
     {
@@ -1019,13 +1025,13 @@ exit=5 1246ms result=PASS
   "isError": true
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON
 INFO mcp.server.mcpserver.server Tool 'write_sanitized_copy' failed: 'Error executing tool write_sanitized_copy: Path is outside N8N_PREFLIGHT_ROOT. Move the file into that folder or change the setting.'
 {"error":{"code":"tool_is_error","message":"Tool 'write_sanitized_copy' returned isError:true."}}
 
 ### W6 the written copy lints without secret/credential/pinData findings
 $ mcp-inspector --cli --method tools/call --tool-name lint_workflow --tool-arg path=shared.json profile=share -e N8N_PREFLIGHT_ROOT=<ROOT> -e N8N_PREFLIGHT_ENABLE_WRITE=true -- python -m n8n_preflight.server
-exit=0 1259ms result=PASS
+exit=0 1170ms result=PASS
 {
   "content": [
     {
@@ -1145,4 +1151,4 @@ exit=0 1259ms result=PASS
   "isError": false
 }
 
-INFO n8n-preflight n8n-preflight 0.1.0, stdio, root set, write tools ON
+INFO n8n-preflight n8n-preflight 0.1.2, stdio, root set, write tools ON

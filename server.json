@@ -7,13 +7,13 @@
     "url": "https://github.com/haechiwood/mcp-n8n-preflight",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "mcp-n8n-preflight",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },
@@ -36,7 +36,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/haechiwood/mcp-n8n-preflight:0.1.1",
+      "identifier": "ghcr.io/haechiwood/mcp-n8n-preflight:0.1.2",
       "transport": {
         "type": "stdio"
       },

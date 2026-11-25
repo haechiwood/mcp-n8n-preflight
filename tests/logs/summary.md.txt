@@ -3,23 +3,23 @@ inspector: mcp-inspector
 
 | # | case | result | exit | ms |
 |---|---|---|---|---|
-| I1 | tools/list, write tools off: 3 read tools | PASS | 0 | 1666 |
-| I2 | lint broken.json profile=run finds the planted failures | PASS | 0 | 1369 |
-| I3 | lint broken.json profile=share: secret and email found but masked | PASS | 0 | 1156 |
-| I4 | lint clean.json profile=template: no findings | PASS | 0 | 1220 |
-| I5 | lint inline workflow_json | PASS | 0 | 1323 |
-| I6 | path outside N8N_PREFLIGHT_ROOT is refused | PASS | 5 | 1971 |
-| I7 | ../ traversal is refused | PASS | 5 | 1408 |
-| I8 | non-.json file is refused | PASS | 5 | 1389 |
-| I9 | both path and workflow_json is refused | PASS | 5 | 1298 |
-| I10 | invalid profile is rejected by the input schema | PASS | 5 | 1379 |
-| I11 | not a workflow (no nodes) is refused | PASS | 5 | 2115 |
-| I12 | summarize broken.json | PASS | 0 | 1400 |
-| I13 | list_rules category=template | PASS | 0 | 1260 |
-| I14 | write tool is not callable when write tools are off | PASS | 5 | 1207 |
-| W1 | tools/list with N8N_PREFLIGHT_ENABLE_WRITE=true | PASS | 0 | 1266 |
-| W2 | write without confirm returns a preview and writes nothing | PASS | 0 | 1345 |
-| W3 | write with confirm=true writes the copy | PASS | 0 | 1255 |
-| W4 | write never overwrites an existing file | PASS | 5 | 1172 |
-| W5 | write outside the root is refused | PASS | 5 | 1246 |
-| W6 | the written copy lints without secret/credential/pinData findings | PASS | 0 | 1259 |
+| I1 | tools/list, write tools off: 3 read tools | PASS | 0 | 1627 |
+| I2 | lint broken.json profile=run finds the planted failures | PASS | 0 | 1095 |
+| I3 | lint broken.json profile=share: secret and email found but masked | PASS | 0 | 1147 |
+| I4 | lint clean.json profile=template: no findings | PASS | 0 | 1066 |
+| I5 | lint inline workflow_json | PASS | 0 | 1128 |
+| I6 | path outside N8N_PREFLIGHT_ROOT is refused | PASS | 5 | 1065 |
+| I7 | ../ traversal is refused | PASS | 5 | 1121 |
+| I8 | non-.json file is refused | PASS | 5 | 1152 |
+| I9 | both path and workflow_json is refused | PASS | 5 | 1162 |
+| I10 | invalid profile is rejected by the input schema | PASS | 5 | 1101 |
+| I11 | not a workflow (no nodes) is refused | PASS | 5 | 1051 |
+| I12 | summarize broken.json | PASS | 0 | 1086 |
+| I13 | list_rules category=template | PASS | 0 | 1282 |
+| I14 | write tool is not callable when write tools are off | PASS | 5 | 1105 |
+| W1 | tools/list with N8N_PREFLIGHT_ENABLE_WRITE=true | PASS | 0 | 1051 |
+| W2 | write without confirm returns a preview and writes nothing | PASS | 0 | 1029 |
+| W3 | write with confirm=true writes the copy | PASS | 0 | 1026 |
+| W4 | write never overwrites an existing file | PASS | 5 | 1056 |
+| W5 | write outside the root is refused | PASS | 5 | 1084 |
+| W6 | the written copy lints without secret/credential/pinData findings | PASS | 0 | 1170 |
