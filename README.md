@@ -2,6 +2,8 @@
 
 <!-- mcp-name: io.github.haechiwood/n8n-preflight -->
 
+[![haechiwood/mcp-n8n-preflight MCP server](https://glama.ai/mcp/servers/haechiwood/mcp-n8n-preflight/badges/score.svg)](https://glama.ai/mcp/servers/haechiwood/mcp-n8n-preflight)
+
 Check an exported n8n workflow **before** you import it, share it, or submit it as a template.
 Ask Claude "is this workflow safe to share?" or "why does this workflow fail?" and it can read the
 JSON file and get a list of concrete problems, each with a fix.
