@@ -58,11 +58,11 @@ These are static checks. A clean result does not prove a workflow works; only ru
 Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/) (or pip).
 
 ```bash
-uvx --from git+https://github.com/haechiwood/mcp-n8n-preflight mcp-n8n-preflight   # from GitHub
-docker run -i --rm -v "$PWD:/work:ro" ghcr.io/haechiwood/mcp-n8n-preflight:0.1.0   # Docker, reads /work
+uvx mcp-n8n-preflight                                                             # from PyPI
+docker run -i --rm -v "$PWD:/work:ro" ghcr.io/haechiwood/mcp-n8n-preflight:0.1.1   # Docker, reads /work
 ```
 
-A PyPI package (`uvx mcp-n8n-preflight`) is planned; until then use one of the two lines above.
+Or `pip install mcp-n8n-preflight`.
 
 ### Claude Desktop
 
@@ -73,7 +73,7 @@ Settings > Developer > Edit Config, then add to `claude_desktop_config.json`:
   "mcpServers": {
     "n8n-preflight": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/haechiwood/mcp-n8n-preflight", "mcp-n8n-preflight"],
+      "args": ["mcp-n8n-preflight"],
       "env": {
         "N8N_PREFLIGHT_ROOT": "/path/to/your/n8n-exports"
       }
@@ -88,7 +88,7 @@ if it is not on its PATH; then put the full path from `which uvx` in `command`.
 ### Claude Code
 
 ```bash
-claude mcp add n8n-preflight -e N8N_PREFLIGHT_ROOT="$PWD" -- uvx --from git+https://github.com/haechiwood/mcp-n8n-preflight mcp-n8n-preflight
+claude mcp add n8n-preflight -e N8N_PREFLIGHT_ROOT="$PWD" -- uvx mcp-n8n-preflight
 claude mcp list          # should show: n8n-preflight ... Connected
 ```
 
@@ -97,7 +97,7 @@ To allow the write tool, add `-e N8N_PREFLIGHT_ENABLE_WRITE=true`.
 ### Without an MCP client (CI, pre-commit)
 
 ```bash
-uvx --from git+https://github.com/haechiwood/mcp-n8n-preflight n8n-preflight lint my-workflow.json --profile share
+uvx --from mcp-n8n-preflight n8n-preflight lint my-workflow.json --profile share
 # exit 0 = no errors, 1 = errors found, 2 = could not read the file
 ```
 

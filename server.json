@@ -7,11 +7,36 @@
     "url": "https://github.com/haechiwood/mcp-n8n-preflight",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "mcp-n8n-preflight",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "N8N_PREFLIGHT_ROOT",
+          "description": "Absolute path to the folder with your exported n8n workflow .json files",
+          "isRequired": true,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "N8N_PREFLIGHT_ENABLE_WRITE",
+          "description": "Set to true to enable write_sanitized_copy (preview first, confirm to write)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    },
+    {
       "registryType": "oci",
-      "identifier": "ghcr.io/haechiwood/mcp-n8n-preflight:0.1.0",
+      "identifier": "ghcr.io/haechiwood/mcp-n8n-preflight:0.1.1",
       "transport": {
         "type": "stdio"
       },

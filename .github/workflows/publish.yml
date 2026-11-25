@@ -2,8 +2,9 @@
 # One-time setup on pypi.org: add a trusted publisher for this repo, workflow "publish.yml",
 # environment "pypi". Then create a GitHub release to publish.
 name: publish
-# Release trigger is off until the PyPI trusted publisher is registered; run manually then.
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 permissions:
   contents: read
