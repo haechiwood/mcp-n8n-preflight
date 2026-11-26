@@ -21,6 +21,12 @@ JSON file and get a list of concrete problems, each with a fix.
 
 Not affiliated with n8n GmbH. "n8n" is used only to say which file format this tool reads.
 
+> **Need help? Hire us.** Workflow still failing after the checks? We fix one n8n workflow for a fixed price:
+> root cause, tested fix and a preflight report, $190 on
+> [Contra](https://contra.com/s/qQWeLOFc-n8n-workflow-fix-root-cause-tested-fix-and-preflight-report?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight)
+> or as a [Fiverr gig](https://www.fiverr.com/haechiwood/debug-and-fix-your-n8n-workflow-errors-webhooks-and-ai-agent-nodes?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight).
+> The work is done by AI agents and checked against a written QA checklist (see "How this was built").
+
 ## Tools
 
 | Tool | Type | What it does |
@@ -161,4 +167,12 @@ MIT. See [LICENSE](LICENSE).
 
 ---
 
-Need a custom MCP server for your API? Hire me on Fiverr: https://www.fiverr.com/haechiwood/build-a-custom-mcp-server-that-connects-your-api-to-claude-and-ai-agents?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight
+## Need help? Hire us
+
+- **n8n workflow fix** (one workflow, up to 6 errors, root cause + tested fix + preflight report):
+  $190 on [Contra](https://contra.com/s/qQWeLOFc-n8n-workflow-fix-root-cause-tested-fix-and-preflight-report?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight),
+  or [on Fiverr](https://www.fiverr.com/haechiwood/debug-and-fix-your-n8n-workflow-errors-webhooks-and-ai-agent-nodes?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight).
+- **Custom MCP server for your API**: [on Fiverr](https://www.fiverr.com/haechiwood/build-a-custom-mcp-server-that-connects-your-api-to-claude-and-ai-agents?utm_source=github&utm_medium=readme&utm_campaign=mcp-n8n-preflight).
+
+AI agents do the building, testing and drafting. Every delivery must pass a written QA checklist before it is sent,
+and the maintainer is accountable for it.
